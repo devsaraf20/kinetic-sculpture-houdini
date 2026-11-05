@@ -1,0 +1,7 @@
+{
+  "comment": "Houdini package. Copy this file into $HOUDINI_USER_PREF_DIR/packages/ and set KINETIC_SCULPTURE to the absolute path of this 'houdini' folder.",
+  "env": [
+    { "KINETIC_SCULPTURE": "/path/to/kinetic-sculpture-houdini/houdini" }
+  ],
+  "path": "$KINETIC_SCULPTURE"
+}

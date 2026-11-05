@@ -1,0 +1,6 @@
+// Visualisation only -- Attribute Wrangle, Run Over: Points.
+// Replaces every ball point by a string from the ball up to the ceiling.
+int a = addpoint(0, @P);
+int b = addpoint(0, set(@P.x, chf("ceiling_m"), @P.z));
+addprim(0, "polyline", a, b);
+removepoint(0, @ptnum);

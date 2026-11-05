@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- Kinetic sculpture tools. Installed by the package file kinetic_sculpture.json. -->
+  <toolshelf name="kinetic_sculpture" label="Kinetic Sculpture">
+    <memberTool name="ks_build_rig"/>
+    <memberTool name="ks_check_limits"/>
+    <memberTool name="ks_export_heights"/>
+  </toolshelf>
+
+  <tool name="ks_build_rig" label="Build Rig" icon="SOP_grid">
+    <helpText><![CDATA[Creates /obj/kinetic_sculpture: a ball grid, example motion, a limit preview and a visualisation.]]></helpText>
+    <script scriptType="python"><![CDATA[
+import importlib, kinetic_scene
+importlib.reload(kinetic_scene)
+kinetic_scene.build_interactive()
+]]></script>
+  </tool>
+
+  <tool name="ks_check_limits" label="Check Limits" icon="SOP_attribwrangle">
+    <helpText><![CDATA[Checks the whole frame range of the selected SOP (default /obj/kinetic_sculpture/OUT_HEIGHTS) against speed, acceleration and travel limits.]]></helpText>
+    <script scriptType="python"><![CDATA[
+import importlib, kinetic_export
+importlib.reload(kinetic_export)
+sel = hou.selectedNodes()
+kinetic_export.check_scene(sop_path=sel[0].path() if sel else "/obj/kinetic_sculpture/OUT_HEIGHTS")
+]]></script>
+  </tool>
+
+  <tool name="ks_export_heights" label="Export Heights" icon="SOP_file">
+    <helpText><![CDATA[Exports every ball's height per frame to JSON or CSV for the web app and the Physical Bridge.]]></helpText>
+    <script scriptType="python"><![CDATA[
+import importlib, kinetic_export
+importlib.reload(kinetic_export)
+kinetic_export.run_shelf_tool()
+]]></script>
+  </tool>
+</shelfDocument>

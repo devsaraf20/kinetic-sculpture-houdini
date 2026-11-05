@@ -1,0 +1,17 @@
+// Ball grid -- Attribute Wrangle, Run Over: Detail (only once), no input.
+// Creates one point per ball at rest height 0 with integer row/col attributes.
+// Rows run along +Z, columns along +X. Units: metres.
+int   rows    = chi("rows");          // 8
+int   cols    = chi("cols");          // 8
+float spacing = chf("spacing_m");     // 0.1  (100 mm between balls)
+
+for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+        vector p = set((c - (cols - 1) * 0.5) * spacing, 0.0, (r - (rows - 1) * 0.5) * spacing);
+        int pt = addpoint(0, p);
+        setpointattrib(0, "row", pt, r);
+        setpointattrib(0, "col", pt, c);
+    }
+}
+setdetailattrib(0, "rows", rows);
+setdetailattrib(0, "cols", cols);
