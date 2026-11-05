@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kinetic Sculpture Studio</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h18"/><path d="M6 3v7M10 3v12M14 3v5M18 3v10"/></g><g fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="10" cy="17" r="2"/><circle cx="14" cy="10" r="2"/><circle cx="18" cy="15" r="2"/></g></svg>
+      <span>Kinetic Sculpture Studio</span>
+    </div>
+    <div id="status" class="pill">No animation loaded</div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="animation" class="active">Animation</button>
+        <button role="tab" data-tab="generate">Generate</button>
+        <button role="tab" data-tab="limits">Limits</button>
+        <button role="tab" data-tab="output">Output</button>
+      </nav>
+
+      <!-- ANIMATION -->
+      <section class="tab-panel active" data-panel="animation">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".json,.csv,.txt" hidden>
+          <strong>Load a height export</strong>
+          <span>Drop a <code>.json</code> or <code>.csv</code> from Houdini or Blender here, or click to browse.</span>
+        </label>
+        <div class="row gap">
+          <button id="demo-ok" class="ghost">Demo: gentle ocean</button>
+          <button id="demo-bad" class="ghost">Demo: too fast</button>
+        </div>
+        <dl class="facts" id="facts"></dl>
+        <h3>Export heights</h3>
+        <p class="hint">Exports what is shown in the viewport (the smoothed version when you are viewing it).</p>
+        <div class="row gap">
+          <button id="export-json">JSON</button>
+          <button id="export-csv">CSV</button>
+        </div>
+      </section>
+
+      <!-- GENERATE -->
+      <section class="tab-panel" data-panel="generate">
+        <div class="field">
+          <label for="gen-preset">Preset</label>
+          <select id="gen-preset"></select>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="gen-rows">Rows</label><input id="gen-rows" type="number" min="1" max="32" value="8"></div>
+          <div class="field"><label for="gen-cols">Columns</label><input id="gen-cols" type="number" min="1" max="32" value="8"></div>
+          <div class="field"><label for="gen-duration">Duration (s)</label><input id="gen-duration" type="number" min="1" max="600" step="1" value="20"></div>
+          <div class="field"><label for="gen-fps">FPS</label><input id="gen-fps" type="number" min="5" max="120" value="30"></div>
+          <div class="field"><label for="gen-base">Rest height (mm)</label><input id="gen-base" type="number" step="10" value="400"></div>
+          <div class="field"><label for="gen-ease">Ease in/out (s)</label><input id="gen-ease" type="number" min="0" step="0.1" value="2.5"></div>
+          <div class="field"><label for="gen-spacing">Ball spacing (mm)</label><input id="gen-spacing" type="number" min="10" step="5" value="100"></div>
+          <div class="field">
+            <label for="gen-fit">Fit to travel</label>
+            <select id="gen-fit"><option value="scale">Scale down</option><option value="clamp">Clamp</option><option value="none">None</option></select>
+          </div>
+        </div>
+        <h3>Layers <span class="hint">summed together</span></h3>
+        <div id="layers"></div>
+        <div class="row gap">
+          <select id="add-layer-type"></select>
+          <button id="add-layer" class="ghost">Add layer</button>
+        </div>
+        <label class="check"><input type="checkbox" id="gen-live" checked> Update live while editing</label>
+        <button id="gen-run" class="primary wide">Generate</button>
+      </section>
+
+      <!-- LIMITS -->
+      <section class="tab-panel" data-panel="limits">
+        <h3>Machine limits</h3>
+        <div class="grid2">
+          <div class="field"><label for="lim-min">Lowest height (mm)</label><input id="lim-min" type="number" step="10"></div>
+          <div class="field"><label for="lim-max">Highest height (mm)</label><input id="lim-max" type="number" step="10"></div>
+          <div class="field"><label for="lim-speed">Max speed (mm/s)</label><input id="lim-speed" type="number" min="1" step="5"></div>
+          <div class="field"><label for="lim-accel">Max accel (mm/s²)</label><input id="lim-accel" type="number" min="1" step="10"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="lim-rest"> Start and end at rest (recommended for shows)</label>
+
+        <h3>Check</h3>
+        <div id="meters"></div>
+        <div id="summary" class="summary"></div>
+        <ol id="spans" class="spans"></ol>
+
+        <h3>Fix</h3>
+        <button id="smooth" class="primary wide">Auto-smooth violations</button>
+        <div class="progress" id="smooth-progress" hidden><div></div></div>
+        <div class="row gap">
+          <button id="retime" class="ghost">Slow down ×1.00</button>
+          <button id="revert" class="ghost">Revert</button>
+        </div>
+        <div class="seg" role="group" aria-label="View">
+          <button id="view-orig" class="active">Original</button>
+          <button id="view-smooth" disabled>Smoothed</button>
+        </div>
+        <label class="check"><input type="checkbox" id="ghost" checked> Show original as ghost when viewing smoothed</label>
+        <p id="smooth-report" class="hint"></p>
+      </section>
+
+      <!-- OUTPUT -->
+      <section class="tab-panel" data-panel="output">
+        <h3>Mechanics</h3>
+        <div class="grid2">
+          <div class="field"><label for="m-spool">Spool diameter (mm)</label><input id="m-spool" type="number" min="1" step="0.5"></div>
+          <div class="field"><label for="m-steps">Steps / rev</label><input id="m-steps" type="number" min="1"></div>
+          <div class="field"><label for="m-micro">Microsteps</label><select id="m-micro"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option><option>32</option></select></div>
+          <div class="field"><label for="m-per-board">Motors per board</label><input id="m-per-board" type="number" min="1" max="64"></div>
+          <div class="field"><label for="m-rate">Board max steps/s</label><input id="m-rate" type="number" min="100" step="100"></div>
+          <div class="field"><label for="m-home">Home switch at</label><select id="m-home"><option value="top">Top (raised)</option><option value="bottom">Bottom</option></select></div>
+        </div>
+        <dl class="facts" id="bridge-facts"></dl>
+        <button id="export-bridge" class="primary wide">Download Physical Bridge (.pbridge.json)</button>
+
+        <h3>Play on hardware <span class="hint">Web Serial · Chrome/Edge</span></h3>
+        <div id="boards"></div>
+        <div class="row gap">
+          <button id="connect" class="ghost">Connect board…</button>
+          <label class="check inline"><input type="checkbox" id="hw-home" checked> Home first</label>
+          <label class="check inline"><input type="checkbox" id="hw-loop"> Loop</label>
+        </div>
+        <div class="row gap">
+          <button id="hw-play" class="primary">Play show</button>
+          <button id="hw-stop">Stop</button>
+        </div>
+        <pre id="hw-log" class="log"></pre>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div id="viewport" class="viewport">
+        <div class="legend">
+          <span><i style="background:var(--c-speed)"></i>speed</span>
+          <span><i style="background:var(--c-accel)"></i>accel</span>
+          <span><i style="background:var(--c-range)"></i>range</span>
+          <label class="check inline"><input type="checkbox" id="color-height" checked> colour by height</label>
+        </div>
+        <div id="empty" class="empty">Load an export, pick a demo, or open <b>Generate</b>.</div>
+      </div>
+      <div class="transport">
+        <button id="play" class="icon" aria-label="Play">▶</button>
+        <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Frame">
+        <span id="time" class="mono">0 / 0</span>
+        <select id="speed" aria-label="Playback speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      </div>
+      <canvas id="timeline" class="timeline" title="Worst ratio to a limit per frame. Click to jump."></canvas>
+      <div id="ball-panel" class="ball-panel" hidden>
+        <div class="ball-head"><b id="ball-title">Ball</b><button id="ball-close" class="icon small" aria-label="Close">×</button></div>
+        <canvas id="ball-chart"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

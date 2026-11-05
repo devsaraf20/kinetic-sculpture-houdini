@@ -1,0 +1,38 @@
+// Physical-limit preview -- Attribute Wrangle, Run Over: Points.
+//   input 0: the animated balls (current frame)
+//   input 1: Time Shift of input 0 to $F-1
+//   input 2: Time Shift of input 0 to $F+1
+// Colours balls that break a limit at this frame (same colours as the web app):
+//   red = too fast, orange = too much acceleration, purple = outside travel.
+// Writes f@speed (mm/s), f@accel (mm/s^2), i@violation (1 range, 2 speed, 4 accel)
+// and detail attributes worst_speed_ratio / worst_accel_ratio / violations.
+// Same motion model as the web app and firmware: constant speed between frames.
+
+float fps   = 1.0 / @TimeInc;
+float scale = chf("unit_scale");           // 1000: metres -> mm
+float zero  = chf("zero_y");
+float h  = (@P.y - zero) * scale;
+float hp = (vector(point(1, "P", @ptnum)).y - zero) * scale;
+float hn = (vector(point(2, "P", @ptnum)).y - zero) * scale;
+
+float v_in  = (h - hp) * fps;               // speed arriving at this frame
+float v_out = (hn - h) * fps;               // speed leaving this frame
+float acc   = (v_out - v_in) * fps;
+
+f@height_mm = h;
+f@speed = abs(v_in);
+f@accel = abs(acc);
+float rs = f@speed / chf("max_speed");
+float ra = f@accel / chf("max_accel");
+int out_of_range = h < chf("min_mm") - 1e-3 || h > chf("max_mm") + 1e-3;
+i@violation = out_of_range + 2 * (rs > 1.0001) + 4 * (ra > 1.0001);
+
+vector c = lerp({0.36, 0.50, 0.65}, {0.91, 0.76, 0.48}, fit(h, chf("min_mm"), chf("max_mm"), 0, 1));
+if (ra > 1.0001) c = {1.0, 0.60, 0.12};
+if (rs > 1.0001) c = {1.0, 0.23, 0.23};
+if (out_of_range) c = {0.82, 0.24, 1.0};
+v@Cd = c;
+
+setdetailattrib(0, "worst_speed_ratio", rs, "max");
+setdetailattrib(0, "worst_accel_ratio", ra, "max");
+setdetailattrib(0, "violations", i@violation != 0 ? 1 : 0, "add");

@@ -1,0 +1,41 @@
+// Example motion -- Attribute Wrangle, Run Over: Points, input 0 = ball grid.
+// Writes the ball height into P.y (metres). Everything here is built to stay
+// physically possible: see docs/HOUDINI_GUIDE.md for the reasoning.
+
+// Quintic ease: zero velocity AND zero acceleration at both ends.
+float smootherstep(float e0; float e1; float x) {
+    float t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+// Soft limit: untouched in the middle, eases into the travel ends instead of
+// hitting them (a hard clamp() creates an acceleration spike).
+float softclamp(float x; float lo; float hi; float knee) {
+    float a = lo + knee, b = hi - knee;
+    if (x > b) return b + knee * tanh((x - b) / knee);
+    if (x < a) return a - knee * tanh((a - x) / knee);
+    return x;
+}
+
+float t     = @Time;                        // seconds (frame 1 = 0 s)
+int   rows  = detail(0, "rows");
+int   cols  = detail(0, "cols");
+vector2 cell = set(i@col - (cols - 1) * 0.5, i@row - (rows - 1) * 0.5);   // grid cells
+
+// Layer 1: travelling wave.
+float dir = radians(chf("wave_direction_deg"));
+float along = cell.x * cos(dir) + cell.y * sin(dir);
+float h = chf("wave_amp_mm") * sin(2 * PI * (along / chf("wave_length_cells") - t / chf("wave_period_s")));
+
+// Layer 2: radial ripple from (ripple_x, ripple_z) in cells.
+float r = length(cell - set(chf("ripple_x"), chf("ripple_z")));
+h += chf("ripple_amp_mm") * sin(2 * PI * (r / chf("ripple_length_cells") - t / chf("ripple_period_s")));
+
+// Start and end the show at the rest height, standing still.
+float ease = chf("ease_s");
+float dur  = chf("duration_s");
+h *= smootherstep(0, ease, t) * smootherstep(0, ease, dur - t);
+
+// Into the travel range (mm), then to metres.
+float mm = softclamp(chf("rest_height_mm") + h, chf("min_mm"), chf("max_mm"), chf("soft_knee_mm"));
+@P.y = mm / 1000.0;

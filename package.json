@@ -1,0 +1,11 @@
+{
+  "name": "kinetic-sculpture-houdini",
+  "private": true,
+  "type": "module",
+  "description": "Animation-to-stepper pipeline for a hanging-ball kinetic sculpture",
+  "scripts": {
+    "test": "node --test \"web/tests/*.test.mjs\"",
+    "serve": "python3 -m http.server 8000",
+    "examples": "node examples/make_examples.mjs"
+  }
+}
